@@ -1,0 +1,4 @@
+# Installed automatically by run.dev unless --skip-caption-setup is used.
+faster-whisper>=1.2.1,<1.3
+# faster-whisper 1.2.x uses av.open(metadata_errors=...), removed by newer PyAV.
+av>=14,<17

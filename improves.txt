@@ -1,0 +1,8 @@
+We should be able to delete a higlight video.
+We should be able to ai review or generate subtitles for selected videos.
+Sidebar should be collapsible.
+improve settings page and add tabs for separate work, its a long scroll page.
+on project page there should be tabs for specific actions.
+use hugeicons instead of lcuide icons.
+for captions add some more font families like inter or monsterrat.
+highlight cards and project cards should be minimal.

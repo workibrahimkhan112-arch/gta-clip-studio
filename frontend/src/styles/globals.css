@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --background: 132 7% 6.5%;
+    --foreground: 100 10% 91%;
+    --card: 132 7% 9%;
+    --muted: 132 6% 13%;
+    --muted-foreground: 120 3% 53%;
+    --border: 120 4% 16%;
+    --primary: 82 84% 67%;
+    --primary-foreground: 105 23% 10%;
+    --destructive: 0 73% 68%;
+  }
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  html {
+    min-width: 320px;
+    scrollbar-gutter: stable;
+  }
+  body {
+    @apply m-0 bg-background font-sans text-xs leading-relaxed text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button,
+  a,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 3px;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  input[type='number'] {
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='range'] {
+    accent-color: hsl(var(--primary));
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #343b33;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #505a4d;
+  }
+}
+
+@layer components {
+  .field {
+    @apply block w-full min-w-0 rounded-md border border-white/10 bg-black/20 px-3 text-xs text-zinc-200 outline-none transition-colors placeholder:text-zinc-600 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .eyebrow {
+    @apply text-[11px] font-medium tracking-wide text-zinc-400;
+  }
+  .sidebar {
+    @apply fixed bottom-0 left-0 top-0 z-40 w-[232px] flex-col border-r border-border bg-[#121612];
+  }
+  .nav-item {
+    @apply relative flex items-center gap-3 rounded-md px-3 py-2.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-white/[0.025] hover:text-zinc-200;
+  }
+  .nav-item-active {
+    @apply bg-primary/[0.075] text-primary hover:bg-primary/[0.075] hover:text-primary;
+  }
+  .nav-item-active::before {
+    content: '';
+    @apply absolute -left-3 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r bg-primary;
+  }
+  .nav-count {
+    @apply rounded bg-white/[0.035] px-1.5 py-0.5 font-mono text-[11px] text-zinc-500;
+  }
+  .nav-item-active .nav-count {
+    @apply bg-primary/10 text-primary/80;
+  }
+  .app-header {
+    @apply sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-7;
+  }
+  .app-main {
+    @apply mx-auto min-h-[calc(100dvh-120px)] w-full max-w-[1720px] px-4 pb-10 pt-6 sm:px-7 sm:pt-8 xl:px-8;
+  }
+  .app-footer {
+    @apply mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-4 text-[11px] text-zinc-600 sm:px-7 xl:px-8;
+  }
+  .page-heading {
+    @apply mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center;
+  }
+  .filter-bar {
+    @apply mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center;
+  }
+  .project-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4;
+  }
+  .highlight-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1600px]:grid-cols-4;
+  }
+
+  .thumbnail-fallback {
+    background-image: linear-gradient(135deg, #171e16 0%, #111610 60%, #1a2117 100%);
+  }
+  .settings-savebar {
+    @apply sticky bottom-4 z-20 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#20261f]/95 px-5 py-4 shadow-xl backdrop-blur-xl;
+  }
+  .skip-link {
+    @apply fixed left-4 top-4 z-[110] -translate-y-24 rounded bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground focus:translate-y-0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

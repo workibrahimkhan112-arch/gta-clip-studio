@@ -1,0 +1,17 @@
+{
+  "name": "gta-clip-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local, signal-first gameplay highlight discovery",
+  "scripts": {
+    "postinstall": "node scripts/install-frontend.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:auto": "python run.dev",
+    "setup": "python run.dev --install-only",
+    "build": "npm --prefix frontend run build",
+    "start": "node scripts/dev.mjs --production",
+    "test": "node scripts/test.mjs",
+    "benchmark": "python scripts/benchmark.py"
+  },
+  "engines": { "node": ">=20" }
+}
