@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, Sparkles, X } from 'lucide-react';
+import { Search, Sparkles, X } from '../icons';
 import { Link } from 'react-router-dom';
 import { useStudio } from '../stores/studio';
 import { label } from '../lib/utils';
@@ -8,6 +8,7 @@ import { EmptyState, PageHeading, ResourceState } from '../components/shared';
 import { ExportControls } from '../components/ExportControls';
 import { HighlightCard } from '../components/HighlightCard';
 import { HighlightEditor } from '../components/HighlightEditor';
+import { ProjectEnhancements } from '../components/ProjectEnhancements';
 
 export function Highlights() {
   const { highlights, projects } = useStudio((s) => s.data);
@@ -38,6 +39,9 @@ export function Highlights() {
                 : b.duration - a.duration,
         ),
     [highlights, projectId, category, selection, query, sort],
+  );
+  const selectedProjects = projects.filter((project) =>
+    filtered.some((highlight) => highlight.project_id === project.id && highlight.selected),
   );
   return (
     <>
@@ -116,6 +120,26 @@ export function Highlights() {
                 />
               </div>
             </div>
+            {selectedProjects.length > 0 && (
+              <details className="mb-5 rounded-lg border border-border bg-card">
+                <summary className="cursor-pointer px-4 py-3 text-xs font-medium">
+                  AI review & subtitles for selected clips
+                </summary>
+                <div className="border-t border-border">
+                  {selectedProjects.map((project) => (
+                    <div key={project.id}>
+                      <p className="px-4 pt-4 text-xs font-medium">{project.name}</p>
+                      <ProjectEnhancements
+                        projectId={project.id}
+                        highlights={filtered.filter(
+                          (highlight) => highlight.project_id === project.id,
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
             <ExportControls highlights={filtered} />
             {filtered.length ? (
               <>
@@ -130,6 +154,9 @@ export function Highlights() {
                       highlight={highlight}
                       projectName={projects.find((p) => p.id === highlight.project_id)?.name}
                       onEdit={(h) => setEditorId(h.id)}
+                      onDeleted={(identifier) => {
+                        if (editorId === identifier) setEditorId(null);
+                      }}
                     />
                   ))}
                 </div>

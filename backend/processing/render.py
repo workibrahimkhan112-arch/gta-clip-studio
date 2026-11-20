@@ -8,7 +8,7 @@ import unicodedata
 import uuid
 from pathlib import Path
 
-from backend.core.config import EXPORTS_DIR, get_binary
+from backend.core.config import EXPORTS_DIR, ROOT, get_binary
 from backend.core.process import run_process
 
 from ._media import clip_bounds, run_ffmpeg, seconds_arg, worker_threads
@@ -54,6 +54,7 @@ def build_render_command(
     settings: dict,
     *,
     subtitle_path: Path | None = None,
+    fonts_dir: Path | None = None,
     has_audio: bool = True,
     video_stream_index: int | None = None,
     layout: dict | None = None,
@@ -87,6 +88,8 @@ def build_render_command(
         )
     if subtitle_path is not None:
         graph += f",ass=filename={escape_filter_filename(subtitle_path)}"
+        if fonts_dir is not None:
+            graph += f":fontsdir={escape_filter_filename(fonts_dir)}"
     graph += "[video]"
     command = [
         str(binary), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
@@ -167,7 +170,9 @@ def render_clip(project: dict, highlight: dict, settings: dict, ctx) -> dict:
                 pass
             command = build_render_command(
                 binary, source, temporary_output, start, duration, settings,
-                subtitle_path=subtitle_path, has_audio=has_audio, video_stream_index=video_stream_index,
+                subtitle_path=subtitle_path,
+                fonts_dir=ROOT / "frontend" / "public" / "fonts" if subtitle_style and subtitle_style["font_family"] in {"Inter", "Montserrat"} else None,
+                has_audio=has_audio, video_stream_index=video_stream_index,
                 layout=layout,
             )
             run_ffmpeg(command, duration, ctx)

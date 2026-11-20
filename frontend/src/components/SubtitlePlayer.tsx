@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, RotateCcw, Volume2, VolumeX } from '../icons';
 import type { CaptionStyle, LayoutConfig, SubtitleStyle, TranscriptSegment } from '../types/api';
 import { api } from '../services/api';
 import { useStudio } from '../stores/studio';

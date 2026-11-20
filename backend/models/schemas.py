@@ -34,7 +34,7 @@ class LayoutConfig(BaseModel):
 
 class SubtitleStyle(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    font_family: Literal["Arial", "Impact", "Verdana"] = "Arial"
+    font_family: Literal["Arial", "Impact", "Verdana", "Inter", "Montserrat"] = "Arial"
     font_size: float = Field(default=48, ge=18, le=96, allow_inf_nan=False)
     bold: bool = True
     text_color: str = "#FFFFFF"
@@ -114,6 +114,10 @@ class YouTubeImport(BaseModel):
 class AnalyzeRequest(BaseModel):
     force: bool = False
     auto_enhance: bool = True
+
+
+class EnhanceRequest(AnalyzeRequest):
+    highlight_ids: list[str] | None = Field(default=None, min_length=1, max_length=50)
 
 
 class ExportRequest(BaseModel):

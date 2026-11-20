@@ -1,4 +1,4 @@
-import { Clock3, Gauge, Square, Timer, Waves } from 'lucide-react';
+import { Clock3, Gauge, Square, Timer, Waves } from '../icons';
 import type { Job } from '../types/api';
 import { api } from '../services/api';
 import { isActive, label, time } from '../lib/utils';

@@ -1,7 +1,7 @@
 import { Component, Suspense, lazy } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2 } from './icons';
 import { Layout } from './components/Layout';
 import { Button, TooltipProvider } from './components/ui';
 import { useLiveData } from './hooks/useLiveData';

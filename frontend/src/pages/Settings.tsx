@@ -16,8 +16,8 @@ import {
   ShieldCheck,
   Trash2,
   XCircle,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+} from '../icons';
+import type { AppIcon } from '../icons';
 import type { Settings as StudioSettings } from '../types/api';
 import { api } from '../services/api';
 import { bytes, cn, label } from '../lib/utils';
@@ -38,6 +38,10 @@ import {
   Input,
   Label,
   Select,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '../components/ui';
 import { EmptyState, PageHeading, ResourceState } from '../components/shared';
 import { captionOptions } from '../components/ExportControls';
@@ -48,6 +52,7 @@ import { UsagePanel } from '../components/UsagePanel';
 
 export function Settings() {
   const settings = useStudio((s) => s.data.settings);
+  const [tab, setTab] = useState('analysis');
   const { pending, run } = useAction();
   useEffect(() => {
     void useStudio.getState().refresh(['settings', 'health', 'benchmarks']);
@@ -69,20 +74,36 @@ export function Settings() {
           Refresh diagnostics
         </Button>
       </PageHeading>
-      <ResourceState resource="settings">
-        {settings && <SettingsForm persisted={settings} />}
-      </ResourceState>
-      <IntegrationSettings />
-      <UsagePanel />
-      <div className="mt-7 grid items-start gap-5 xl:grid-cols-2">
-        <SystemHealth />
-        <Maintenance />
-      </div>
-      <Benchmarks />
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList
+          aria-label="Settings sections"
+          className="mb-5 flex h-auto flex-wrap justify-start gap-1"
+        >
+          <TabsTrigger value="analysis">Analysis</TabsTrigger>
+          <TabsTrigger value="export">Export & subtitles</TabsTrigger>
+          <TabsTrigger value="ai">AI review</TabsTrigger>
+          <TabsTrigger value="connections">Connections & usage</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+        </TabsList>
+        <ResourceState resource="settings">
+          {settings && <SettingsForm persisted={settings} tab={tab} />}
+        </ResourceState>
+        <TabsContent value="connections">
+          <IntegrationSettings />
+          <UsagePanel />
+        </TabsContent>
+        <TabsContent value="system">
+          <div className="grid items-start gap-5 xl:grid-cols-2">
+            <SystemHealth />
+            <Maintenance />
+          </div>
+          <Benchmarks />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
-function SettingsForm({ persisted }: { persisted: StudioSettings }) {
+function SettingsForm({ persisted, tab }: { persisted: StudioSettings; tab: string }) {
   const [draft, setDraft] = useState<StudioSettings>(() => structuredClone(persisted));
   const { pending, run } = useAction();
   const dirty = JSON.stringify(draft) !== JSON.stringify(persisted);
@@ -178,7 +199,7 @@ function SettingsForm({ persisted }: { persisted: StudioSettings }) {
   };
   return (
     <form onSubmit={submit}>
-      <div className="grid items-start gap-5 xl:grid-cols-2">
+      <TabsContent value="analysis" className="grid items-start gap-5 xl:grid-cols-2">
         <div className="space-y-5">
           <SettingSection
             icon={Gauge}
@@ -275,63 +296,65 @@ function SettingsForm({ persisted }: { persisted: StudioSettings }) {
               />
             </SettingRow>
           </SettingSection>
-          <SettingSection
-            icon={FolderOpen}
-            title="Export defaults"
-            subtitle="Applies to new exports, not queued jobs."
-          >
-            {choose(
-              'output_resolution',
-              'Vertical resolution',
-              'Portrait output for short-form video.',
-              [
-                { value: '720x1280', label: '720 × 1280 · 9:16' },
-                { value: '1080x1920', label: '1080 × 1920 · 9:16' },
-              ],
-            )}
-            {choose(
-              'caption_style',
-              'Subtitle style',
-              'Subtitles generate after detection and on export. No captions disables transcription and burned-in text.',
-              captionOptions,
-            )}
-            {choose(
-              'caption_provider',
-              'Subtitle provider',
-              'Local uses the cached CPU model prepared by the launcher. Groq uploads clip audio and requires saved consent and a configured Groq key.',
-              [
-                { value: 'local', label: 'Local · offline model' },
-                { value: 'groq', label: 'Groq · cloud audio' },
-              ],
-            )}
-            {choose(
-              'default_layout',
-              'New project layout',
-              'Applies to new imports only. Split starts 50/50 and requires selecting the real embedded facecam. Legacy projects keep blurred layout.',
-              [
-                { value: 'split', label: 'Split · facecam / gameplay' },
-                { value: 'blurred', label: 'Blurred background' },
-              ],
-            )}
-            <div className="px-5 py-4">
-              <Label htmlFor="output-folder">Output folder on the server</Label>
-              <Input
-                id="output-folder"
-                value={draft.output_folder}
-                onChange={(e) => update('output_folder', e.target.value)}
-                disabled={pending}
-                placeholder="Use default: storage/exports"
-                className="font-mono text-[11px]"
-              />
-              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                Leave empty to use storage/exports. A custom folder must be writable by the backend.
-                This is a server path, not your browser’s download folder.
-              </p>
-            </div>
-          </SettingSection>
         </div>
-      </div>
-      <div className="mt-5">
+      </TabsContent>
+      <TabsContent value="export">
+        <SettingSection
+          icon={FolderOpen}
+          title="Export defaults"
+          subtitle="Applies to new exports, not queued jobs."
+        >
+          {choose(
+            'output_resolution',
+            'Vertical resolution',
+            'Portrait output for short-form video.',
+            [
+              { value: '720x1280', label: '720 × 1280 · 9:16' },
+              { value: '1080x1920', label: '1080 × 1920 · 9:16' },
+            ],
+          )}
+          {choose(
+            'caption_style',
+            'Subtitle style',
+            'Subtitles generate after detection and on export. No captions disables transcription and burned-in text.',
+            captionOptions,
+          )}
+          {choose(
+            'caption_provider',
+            'Subtitle provider',
+            'Local uses the cached CPU model prepared by the launcher. Groq uploads clip audio and requires saved consent and a configured Groq key.',
+            [
+              { value: 'local', label: 'Local · offline model' },
+              { value: 'groq', label: 'Groq · cloud audio' },
+            ],
+          )}
+          {choose(
+            'default_layout',
+            'New project layout',
+            'Applies to new imports only. Split starts 50/50 and requires selecting the real embedded facecam. Legacy projects keep blurred layout.',
+            [
+              { value: 'split', label: 'Split · facecam / gameplay' },
+              { value: 'blurred', label: 'Blurred background' },
+            ],
+          )}
+          <div className="px-5 py-4">
+            <Label htmlFor="output-folder">Output folder on the server</Label>
+            <Input
+              id="output-folder"
+              value={draft.output_folder}
+              onChange={(e) => update('output_folder', e.target.value)}
+              disabled={pending}
+              placeholder="Use default: storage/exports"
+              className="font-mono text-[11px]"
+            />
+            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+              Leave empty to use storage/exports. A custom folder must be writable by the backend.
+              This is a server path, not your browser’s download folder.
+            </p>
+          </div>
+        </SettingSection>
+      </TabsContent>
+      <TabsContent value="ai">
         <SettingSection
           icon={ShieldCheck}
           title="AI review"
@@ -485,36 +508,38 @@ function SettingsForm({ persisted }: { persisted: StudioSettings }) {
               </p>
             )}
         </SettingSection>
-      </div>
-      <div className="settings-savebar">
-        <p className="flex items-center gap-2 text-[11px] text-zinc-500">
-          {dirty ? (
-            <>
-              <span className="size-1.5 rounded-full bg-amber-200" />
-              <span className="text-amber-200/80">Unsaved changes</span>
-            </>
-          ) : (
-            <>
-              <Check className="size-3.5 text-primary" />
-              All preferences saved on server
-            </>
-          )}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!dirty || pending}
-            onClick={() => setDraft(structuredClone(persisted))}
-          >
-            Discard changes
-          </Button>
-          <Button type="submit" loading={pending} disabled={!dirty}>
-            <Save />
-            Save preferences
-          </Button>
+      </TabsContent>
+      {(dirty || ['analysis', 'export', 'ai'].includes(tab)) && (
+        <div className="settings-savebar">
+          <p className="flex items-center gap-2 text-[11px] text-zinc-500">
+            {dirty ? (
+              <>
+                <span className="size-1.5 rounded-full bg-amber-200" />
+                <span className="text-amber-200/80">Unsaved changes</span>
+              </>
+            ) : (
+              <>
+                <Check className="size-3.5 text-primary" />
+                All preferences saved on server
+              </>
+            )}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!dirty || pending}
+              onClick={() => setDraft(structuredClone(persisted))}
+            >
+              Discard changes
+            </Button>
+            <Button type="submit" loading={pending} disabled={!dirty}>
+              <Save />
+              Save preferences
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </form>
   );
 }
@@ -524,7 +549,7 @@ function SettingSection({
   subtitle,
   children,
 }: {
-  icon: LucideIcon;
+  icon: AppIcon;
   title: string;
   subtitle: string;
   children: React.ReactNode;

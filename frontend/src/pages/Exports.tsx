@@ -8,10 +8,25 @@ import {
   FolderOpen,
   History,
   Search,
-} from 'lucide-react';
+  Trash2,
+} from '../icons';
+import { api } from '../services/api';
 import { useStudio } from '../stores/studio';
+import { useAction } from '../hooks/useAction';
 import { date, isActive } from '../lib/utils';
-import { Badge, Button, Card, CardHeader, CardTitle, Input, Select } from '../components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  Input,
+  Select,
+} from '../components/ui';
 import { EmptyState, PageHeading, ResourceState, StatusBadge } from '../components/shared';
 import { JobCard } from '../components/JobCard';
 
@@ -20,6 +35,9 @@ export function Exports() {
   const loaded = useStudio((s) => s.loaded.exports);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deletion = useAction();
+  const deleteRecord = exports.find((record) => record.id === deleteId);
   const active = jobs
     .filter((j) => j.kind === 'export' && isActive(j))
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -185,6 +203,15 @@ export function Exports() {
                           </Link>
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete export ${record.filename || record.id}`}
+                        disabled={record.status === 'queued' || record.status === 'running'}
+                        onClick={() => setDeleteId(record.id)}
+                      >
+                        <Trash2 className="!size-4" />
+                      </Button>
                     </div>
                   );
                 })}
@@ -220,6 +247,44 @@ export function Exports() {
           </p>
         </div>
       </Card>
+      <Dialog
+        open={!!deleteRecord}
+        onOpenChange={(open) => {
+          if (!open && !deletion.pending) setDeleteId(null);
+        }}
+      >
+        <DialogContent hideClose={deletion.pending}>
+          <DialogTitle>Delete this exported video?</DialogTitle>
+          <DialogDescription>
+            Delete “{deleteRecord?.filename || 'this export'}” from disk and remove it from Exports.
+            The source recording and highlight remain. This cannot be undone.
+          </DialogDescription>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              disabled={deletion.pending}
+              onClick={() => setDeleteId(null)}
+            >
+              Keep video
+            </Button>
+            <Button
+              variant="destructive"
+              loading={deletion.pending}
+              onClick={() => {
+                if (!deleteRecord) return;
+                void deletion.run(async () => {
+                  await api.deleteExport(deleteRecord.id);
+                  setDeleteId(null);
+                  await useStudio.getState().refresh(['exports']);
+                }, 'Exported video deleted');
+              }}
+            >
+              <Trash2 />
+              Delete video
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {history.length > 0 && (
         <details className="mt-6 rounded-lg border border-border bg-card">
           <summary className="flex cursor-pointer items-center gap-2 px-5 py-4 text-xs font-medium">

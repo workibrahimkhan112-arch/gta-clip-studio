@@ -739,6 +739,69 @@ def test_delete_requires_inactive_jobs_and_never_removes_external_source(client,
     assert get_json(client, "/api/projects") == []
 
 
+def test_selected_caption_job_only_queues_requested_highlights(client, project, highlight):
+    other = seed_highlight(project["id"], start=70.0)
+    url = f"/api/projects/{project['id']}/captions"
+    invalid = client.post(url, json={"highlight_ids": ["missing"]})
+    assert invalid.status_code == 404
+    response = client.post(url, json={"highlight_ids": [highlight["id"]]})
+    assert response.status_code == 202, response.text
+    assert job_payload(response.json()["id"])["highlight_ids"] == [highlight["id"]]
+    assert store.get("highlights", highlight["id"])["caption_status"] == "pending"
+    assert store.get("highlights", other["id"]) == other
+
+
+def test_selected_ai_review_only_queues_requested_highlights(client, project, highlight, monkeypatch):
+    seed_highlight(project["id"], start=70.0)
+    monkeypatch.setattr(routes, "require_cloud", lambda settings, provider: None)
+    settings = store.settings()
+    settings["ai_scoring_provider"] = "gemini"
+    store.save_settings(settings)
+    url = f"/api/projects/{project['id']}/score"
+    assert client.post(url, json={"highlight_ids": ["missing"]}).status_code == 404
+    response = client.post(url, json={"highlight_ids": [highlight["id"]]})
+    assert response.status_code == 202, response.text
+    assert job_payload(response.json()["id"])["highlight_ids"] == [highlight["id"]]
+
+
+def test_delete_highlight_preserves_source_and_other_highlights(client, studio, project, highlight):
+    other = seed_highlight(project["id"], start=70.0)
+    thumbnail = studio.cache / project["id"] / "thumbnails" / f"{highlight['id']}.jpg"
+    thumbnail.parent.mkdir(parents=True)
+    thumbnail.write_bytes(b"thumbnail")
+    url = f"/api/highlights/{highlight['id']}"
+    response = client.delete(url)
+    assert response.status_code == 204, response.text
+    assert store.get("highlights", highlight["id"]) is None
+    assert store.get("highlights", other["id"]) == other
+    assert not thumbnail.exists()
+    assert studio.source.read_bytes() == MEDIA_BYTES
+    assert client.delete(url).status_code == 404
+
+
+def test_delete_export_removes_only_its_video(client, studio, project, highlight):
+    studio.exports.mkdir(parents=True, exist_ok=True)
+    filename = "gta-clip-job123.mp4"
+    output = studio.exports / filename
+    output.write_bytes(b"rendered video")
+    other = studio.exports / "unrelated.mp4"
+    other.write_bytes(b"keep")
+    identifier = str(uuid4())
+    store.insert("exports", {
+        "id": identifier, "project_id": project["id"], "highlight_id": highlight["id"],
+        "job_id": "job123", "status": "completed", "output_path": str(output),
+        "filename": filename, "created_at": store.now(), "error": None,
+        "download_url": f"/api/exports/{identifier}/file",
+    })
+    response = client.delete(f"/api/exports/{identifier}")
+    assert response.status_code == 204, response.text
+    assert not output.exists()
+    assert other.read_bytes() == b"keep"
+    assert studio.source.read_bytes() == MEDIA_BYTES
+    assert store.get("highlights", highlight["id"]) == highlight
+    assert store.get("exports", identifier) is None
+
+
 @pytest.mark.parametrize("headers", [
     pytest.param({"Host": "attacker.example"}, id="external-host"),
     pytest.param({"Host": "127.0.0.1.attacker.example"}, id="host-suffix"),

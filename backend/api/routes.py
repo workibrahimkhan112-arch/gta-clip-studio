@@ -19,7 +19,7 @@ from starlette.datastructures import UploadFile
 from backend.core.config import CACHE_DIR, PROJECTS_DIR, STORAGE_DIR, VIDEO_EXTENSIONS, VERSION, get_binary
 from backend.core.process import run_process
 from backend.database import store
-from backend.models.schemas import (AccountAction, AnalyzeRequest, BatchExport, ExportRequest, HighlightPatch, IntegrationKey, LayoutConfig, LocalImport, Settings, YouTubeImport)
+from backend.models.schemas import (AccountAction, AnalyzeRequest, BatchExport, EnhanceRequest, ExportRequest, HighlightPatch, IntegrationKey, LayoutConfig, LocalImport, Settings, YouTubeImport)
 from backend.utils.capabilities import capabilities
 from backend.utils.media import probe, validate_source
 from backend.workers.jobs import ACTIVE, public_job, runner
@@ -308,27 +308,36 @@ def highlight_captions(identifier: str, body: AnalyzeRequest | None = None):
 
 
 @router.post("/projects/{identifier}/captions", status_code=202)
-def project_caption_job(identifier: str, body: AnalyzeRequest | None = None):
+def project_caption_job(identifier: str, body: EnhanceRequest | None = None):
     needs_media()
     with runner.lock:
-        return enqueue_captions(identifier, force=bool(body and body.force))
+        ids = body.highlight_ids if body else None
+        if ids is not None:
+            available = {item["id"] for item in store.list_items("highlights", identifier)}
+            if any(item not in available for item in ids):
+                raise HTTPException(404, "A selected highlight was not found in this project")
+        return enqueue_captions(identifier, highlight_ids=ids, force=bool(body and body.force))
 
 
 @router.post("/projects/{identifier}/score", status_code=202)
-def score_project(identifier: str, body: AnalyzeRequest | None = None):
+def score_project(identifier: str, body: EnhanceRequest | None = None):
     needs_media()
     with runner.lock:
         required("projects", identifier)
         if store.active_jobs(identifier):
             raise HTTPException(409, "Finish current project work before requesting AI review")
-        if not store.list_items("highlights", identifier):
+        available = {item["id"] for item in store.list_items("highlights", identifier)}
+        if not available:
             raise HTTPException(409, "Analyze this project first")
+        ids = body.highlight_ids if body else None
+        if ids is not None and any(item not in available for item in ids):
+            raise HTTPException(404, "A selected highlight was not found in this project")
         settings = store.settings()
         provider = settings.get("ai_scoring_provider", "none")
         if provider == "none":
             raise HTTPException(409, "Choose an AI review provider in Settings first")
         require_cloud(settings, provider)
-        return runner.submit("score", identifier, {"settings": settings, "force": bool(body and body.force)})
+        return runner.submit("score", identifier, {"settings": settings, "force": bool(body and body.force), "highlight_ids": ids})
 
 
 @router.get("/projects/{identifier}")
@@ -410,6 +419,17 @@ def patch_highlight(identifier: str, body: HighlightPatch):
         return store.update("highlights", identifier, patch)
 
 
+@router.delete("/highlights/{identifier}", status_code=204)
+def delete_highlight(identifier: str):
+    with runner.lock:
+        highlight = required("highlights", identifier)
+        if store.active_jobs(highlight["project_id"]):
+            raise HTTPException(409, "Finish or cancel current project jobs before deleting a highlight")
+        store.delete_highlight(identifier)
+        (CACHE_DIR / highlight["project_id"] / "thumbnails" / f"{identifier}.jpg").unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
 def export_layout(project):
     from backend.processing.layout import validate_layout
     try:
@@ -475,6 +495,26 @@ def export_file(identifier: str):
     if item["status"] != "completed" or not path.is_file():
         raise HTTPException(404, "Export file is not ready or has been moved")
     return FileResponse(path, filename=item["filename"], media_type="video/mp4")
+
+
+@router.delete("/exports/{identifier}", status_code=204)
+def delete_export(identifier: str):
+    with runner.lock:
+        item = required("exports", identifier)
+        if item["status"] in ACTIVE:
+            raise HTTPException(409, "Cancel this export job before deleting its video")
+        path = Path(item.get("output_path") or "")
+        filename = item.get("filename") or ""
+        job_id = item.get("job_id") or ""
+        if filename and path.is_file():
+            if path.name != filename or not filename.startswith("gta-") or not filename.endswith(f"-{job_id}.mp4"):
+                raise HTTPException(409, "Export file ownership could not be verified")
+            try:
+                path.unlink()
+            except OSError as exc:
+                raise HTTPException(409, f"Could not delete export file: {exc}") from exc
+        store.delete_export(identifier)
+    return Response(status_code=204)
 
 
 @router.get("/projects/{identifier}/media")

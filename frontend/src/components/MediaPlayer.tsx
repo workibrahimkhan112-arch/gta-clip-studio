@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Film, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Film, RotateCcw } from '../icons';
 import { api } from '../services/api';
 import { Button } from './ui';
 import { cn, time } from '../lib/utils';

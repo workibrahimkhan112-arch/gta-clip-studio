@@ -354,8 +354,9 @@ class JobRunner:
                     store.complete_export(export_id, job["id"], rendered, time.monotonic() - started)
                 return
             elif job["kind"] in {"captions", "score"}:
-                ids = set(payload.get("highlight_ids") or [])
-                highlights = [item for item in store.list_items("highlights", project["id"]) if not ids or item["id"] in ids]
+                requested_ids = payload.get("highlight_ids")
+                ids = set(requested_ids) if requested_ids is not None else None
+                highlights = [item for item in store.list_items("highlights", project["id"]) if ids is None or item["id"] in ids]
                 highlights.sort(key=lambda item: item["score"], reverse=True)
                 if not highlights:
                     raise ValueError("No highlights remain; analyze this project first")

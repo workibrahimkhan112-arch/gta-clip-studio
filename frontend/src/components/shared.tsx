@@ -10,8 +10,8 @@ import {
   Loader2,
   RefreshCw,
   X,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+} from '../icons';
+import type { AppIcon } from '../icons';
 import { Link } from 'react-router-dom';
 import { useStudio, type ResourceKey } from '../stores/studio';
 import { useUI } from '../stores/ui';
@@ -51,7 +51,7 @@ export function EmptyState({
   children,
   compact,
 }: {
-  icon?: LucideIcon;
+  icon?: AppIcon;
   title: string;
   description: string;
   children?: React.ReactNode;
@@ -262,7 +262,7 @@ export function Metric({
   value,
   detail,
 }: {
-  icon: LucideIcon;
+  icon: AppIcon;
   label: string;
   value: React.ReactNode;
   detail: string;

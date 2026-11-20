@@ -254,6 +254,11 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(command[0], "ffmpeg")
         self.assertIn("source video.mp4", command)
 
+    def test_bundled_font_directory_is_passed_to_ass_filter(self):
+        command = self.command(subtitle_path=Path("captions.ass"), fonts_dir=Path("fonts with space"))
+        graph = command[command.index("-filter_complex") + 1]
+        self.assertIn(":fontsdir=" + escape_filter_filename(Path("fonts with space")), graph)
+
     def test_clip_bounds_clamp_to_source_end(self):
         self.assertEqual(_media.clip_bounds({"metadata": {"duration": 10}}, {"start": 8, "end": 15}), (8, 2))
         for start, end in ((-1, 2), (2, 2), (3, 2), (math.nan, 2), (0, math.inf), (11, 12)):

@@ -2,7 +2,7 @@ export type CaptionStyle = 'none' | 'standard' | 'animated';
 export type CloudProvider = 'gemini' | 'groq' | 'openai';
 export type OpenAIAuthMode = 'api_key' | 'chatgpt';
 export interface SubtitleStyle {
-  font_family: 'Arial' | 'Impact' | 'Verdana';
+  font_family: 'Arial' | 'Impact' | 'Verdana' | 'Inter' | 'Montserrat';
   font_size: number;
   bold: boolean;
   text_color: string;

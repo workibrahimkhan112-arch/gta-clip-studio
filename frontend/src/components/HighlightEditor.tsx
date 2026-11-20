@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Captions, Check, Download, Plus, Save, Trash2 } from 'lucide-react';
+import { Captions, Check, Download, Plus, Save, Trash2 } from '../icons';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CaptionStyle, Highlight, SubtitleStyle, TranscriptSegment } from '../types/api';
 import { api } from '../services/api';

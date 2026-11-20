@@ -53,6 +53,8 @@ export function ProjectEnhancements({
     chatgpt.status,
   );
   const projectBusy = jobs.some((job) => job.project_id === projectId && isActive(job));
+  const selected = highlights.filter((highlight) => highlight.selected);
+  const selectedIds = selected.map((highlight) => highlight.id);
   const busy = (kind: 'captions' | 'score') =>
     jobs.some((job) => job.project_id === projectId && job.kind === kind && isActive(job));
   return (
@@ -62,7 +64,7 @@ export function ProjectEnhancements({
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
           {settings?.caption_style === 'none'
             ? 'No captions is selected in Settings. Choose Standard or Animated to enable transcription and subtitle export.'
-            : 'Generate subtitles for every project highlight, not just selected clips (up to 50 clips, 90s each). Missing subtitles also generate after detection and on export.'}
+            : `Generate subtitles for the ${selected.length} selected clip${selected.length === 1 ? '' : 's'} (up to 50 clips, 90s each). Missing subtitles also generate after detection and on export.`}
         </p>
         <div className="my-3 flex items-center gap-2">
           <Checkbox
@@ -79,16 +81,16 @@ export function ProjectEnhancements({
           variant="secondary"
           loading={captions.pending}
           disabled={
-            !highlights.length ||
+            !selected.length ||
             !settings ||
             settings.caption_style === 'none' ||
             projectBusy ||
-            highlights.length > 50 ||
-            highlights.some((h) => h.duration > 90)
+            selected.length > 50 ||
+            selected.some((h) => h.duration > 90)
           }
           onClick={() => {
             void captions.run(async () => {
-              const job = await api.projectCaptions(projectId, replaceCaptions);
+              const job = await api.projectCaptions(projectId, replaceCaptions, selectedIds);
               useStudio.getState().upsertJob(job);
               setReplaceCaptions(false);
             }, 'Subtitles queued. Text updates when the job finishes.');
@@ -100,7 +102,7 @@ export function ProjectEnhancements({
       <div>
         <h3 className="text-xs font-semibold">AI review</h3>
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-          Review up to {settings?.ai_scoring_max_candidates ?? 5} top candidates with{' '}
+          Review up to {settings?.ai_scoring_max_candidates ?? 5} selected clips with{' '}
           {provider === 'none' ? 'a cloud provider' : provider}.{' '}
           {settings?.ai_review_mode === 'vision' && provider !== 'groq'
             ? 'Vision uploads sparse frames and transcript.'
@@ -138,14 +140,14 @@ export function ProjectEnhancements({
             size="sm"
             loading={review.pending}
             disabled={
-              !highlights.length ||
+              !selected.length ||
               !!problem ||
               (planMode ? !!chatgpt.error : loading || !!error) ||
               projectBusy
             }
             onClick={() => {
               void review.run(async () => {
-                const job = await api.scoreProject(projectId, forceReview);
+                const job = await api.scoreProject(projectId, forceReview, selectedIds);
                 useStudio.getState().upsertJob(job);
                 setForceReview(false);
               }, 'AI review queued. Local results are unchanged.');

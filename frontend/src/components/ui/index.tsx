@@ -6,7 +6,7 @@ import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Check, ChevronDown, ChevronUp, Loader2, Minus, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Loader2, Minus, X } from '../../icons';
 import { cn } from '../../lib/utils';
 
 const buttonVariants = cva(

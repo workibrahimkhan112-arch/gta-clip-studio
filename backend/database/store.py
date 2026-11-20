@@ -128,6 +128,16 @@ def delete_project(identifier: str) -> None:
         db.execute("DELETE FROM projects WHERE id=?", (identifier,))
 
 
+def delete_highlight(identifier: str) -> None:
+    with connection() as db:
+        db.execute("DELETE FROM highlights WHERE id=?", (identifier,))
+
+
+def delete_export(identifier: str) -> None:
+    with connection() as db:
+        db.execute("DELETE FROM exports WHERE id=?", (identifier,))
+
+
 def replace_highlights(project_id: str, highlights: list[dict]) -> None:
     with connection() as db:
         # Replace only once analysis succeeded, preserving earlier results on error/cancel.

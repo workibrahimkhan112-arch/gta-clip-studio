@@ -1,4 +1,4 @@
-import { FileVideo, HardDrive } from 'lucide-react';
+import { FileVideo, HardDrive } from '../icons';
 import type { Project } from '../types/api';
 import { bytes, date, time } from '../lib/utils';
 import { Card, CardHeader, CardTitle } from './ui';

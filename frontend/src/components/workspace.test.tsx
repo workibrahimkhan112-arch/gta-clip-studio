@@ -146,11 +146,18 @@ describe('project workspace views', () => {
     expect(screen.getByRole('tab', { name: 'Review' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByLabelText('Source video preview')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Event timeline' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: `Preview ${highlightFixture.title}` })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Export selected/ })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Layout editor' })).toBeNull();
+    expect(screen.queryByText('Project details')).toBeNull();
+    expect(screen.queryByText('Subtitles & AI review', { exact: true })).toBeNull();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'Highlights' }));
     expect(screen.getByRole('button', { name: `Preview ${highlightFixture.title}` })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Export selected/ })).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'Layout editor' })).toBeNull();
+    expect(disclosure('Subtitles & AI review').open).toBe(false);
+    await user.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(disclosure('Project details').open).toBe(false);
-    expect(disclosure('Tools').open).toBe(false);
   });
 
   it('opens a dedicated Layout view from a deep link', async () => {
@@ -161,7 +168,7 @@ describe('project workspace views', () => {
     expect(screen.queryByRole('heading', { name: 'Event timeline' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Export selected/ })).toBeNull();
     expect(screen.queryByRole('button', { name: `Preview ${highlightFixture.title}` })).toBeNull();
-    expect(screen.queryByText('Tools', { exact: true })).toBeNull();
+    expect(screen.queryByText('Subtitles & AI review', { exact: true })).toBeNull();
   });
 
   it('preserves query parameters, browser history, and layout drafts across tab changes', async () => {
@@ -195,7 +202,9 @@ describe('project workspace views', () => {
     const video = screen.getByLabelText('Source video preview') as HTMLVideoElement;
     Object.defineProperty(video, 'readyState', { configurable: true, value: 1 });
     fireEvent.loadedMetadata(video);
-    await user.click(screen.getByRole('button', { name: `Preview ${highlightFixture.title}` }));
+    await user.click(
+      screen.getByRole('button', { name: `Jump to ${highlightFixture.title}, 0:10` }),
+    );
     expect(video.currentTime).toBe(highlightFixture.start);
     fireEvent.change(screen.getByRole('slider', { name: 'Seek source video' }), {
       target: { value: '32' },
@@ -236,21 +245,27 @@ describe('project workspace views', () => {
       expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('40');
       expect(screen.getByRole('button', { name: 'Cancel export job' })).toBeTruthy();
       expect(screen.getByRole('alert').textContent).toContain('Output folder is not writable');
-      expect(screen.getByText('Earlier export finished').closest('details')?.open).toBe(false);
     }
+    await user.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByText('Earlier export finished').closest('details')?.open).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Cancel export job' }));
     await waitFor(() => expect(api.cancelJob).toHaveBeenCalledWith(jobFixture.id));
   });
 
-  it('opens subtitle tools without changing their project-wide API scope', async () => {
+  it('opens subtitle tools for selected clips', async () => {
     const user = userEvent.setup();
     vi.spyOn(api, 'projectCaptions').mockResolvedValue({ ...jobFixture, kind: 'captions' });
     await workspace();
-    await user.click(screen.getByText('Tools', { exact: true }));
-    expect(disclosure('Tools').open).toBe(true);
+    await user.click(screen.getByRole('tab', { name: 'Highlights' }));
+    await user.click(screen.getByText('Subtitles & AI review', { exact: true }));
+    expect(disclosure('Subtitles & AI review').open).toBe(true);
     await user.click(screen.getByRole('checkbox', { name: /Replace existing transcripts/ }));
     await user.click(screen.getByRole('button', { name: 'Generate subtitles' }));
-    await waitFor(() => expect(api.projectCaptions).toHaveBeenCalledWith(projectFixture.id, true));
+    await waitFor(() =>
+      expect(api.projectCaptions).toHaveBeenCalledWith(projectFixture.id, true, [
+        highlightFixture.id,
+      ]),
+    );
   });
 
   it('retains import progress without mounting either video editor', async () => {

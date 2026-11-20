@@ -1,4 +1,4 @@
-import { ScanLine } from 'lucide-react';
+import { ScanLine } from '../icons';
 import type { Highlight, DetectionEvent } from '../types/api';
 import { cn, time } from '../lib/utils';
 import { Badge } from './ui';

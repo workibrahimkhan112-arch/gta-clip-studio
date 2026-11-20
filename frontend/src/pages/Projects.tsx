@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Film, FolderOpen, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Film, FolderOpen, Search, SlidersHorizontal, X } from '../icons';
 import { useStudio } from '../stores/studio';
 import { Button, Card, Input, Select } from '../components/ui';
 import {

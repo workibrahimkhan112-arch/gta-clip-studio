@@ -43,8 +43,8 @@ def normalize_subtitle_style(value: object) -> dict | None:
     if any(key not in _DEFAULTS for key in value):
         raise ValueError("Subtitle style contains unsupported fields.")
     style = {**_DEFAULTS, **value}
-    if style["font_family"] not in ("Arial", "Impact", "Verdana"):
-        raise ValueError("Subtitle font_family must be Arial, Impact or Verdana.")
+    if style["font_family"] not in ("Arial", "Impact", "Verdana", "Inter", "Montserrat"):
+        raise ValueError("Subtitle font_family must be Arial, Impact, Verdana, Inter or Montserrat.")
     if type(style["bold"]) is not bool:
         raise ValueError("Subtitle bold must be a boolean.")
     for name, (minimum, maximum) in _RANGES.items():

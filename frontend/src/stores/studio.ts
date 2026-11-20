@@ -43,6 +43,7 @@ interface StudioState {
   upsertJob: (job: Job) => void;
   upsertProject: (project: Project) => void;
   upsertHighlight: (highlight: Highlight) => void;
+  removeHighlight: (identifier: string) => void;
   setSettings: (settings: Settings) => void;
 }
 export const useStudio = create<StudioState>((set, get) => ({
@@ -116,6 +117,13 @@ export const useStudio = create<StudioState>((set, get) => ({
           ? s.data.highlights.map((h) => (h.id === highlight.id ? highlight : h))
           : [...s.data.highlights, highlight],
       },
+    }));
+  },
+  removeHighlight: (identifier) => {
+    versions.highlights = (versions.highlights ?? 0) + 1;
+    set((s) => ({
+      loading: { ...s.loading, highlights: false },
+      data: { ...s.data, highlights: s.data.highlights.filter((h) => h.id !== identifier) },
     }));
   },
   setSettings: (settings) => {

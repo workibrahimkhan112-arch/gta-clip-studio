@@ -118,7 +118,7 @@ def ensure_python() -> Path:
     return python
 
 
-def ensure_captions(python: Path) -> None:
+def ensure_captions(python: Path, *, timeout: int = 1200) -> None:
     """Set up the small offline speech model, unless captions/cloud opt-out wins."""
     import sqlite3
     database = Path(os.environ.get("GTA_STORAGE_DIR") or ROOT / "storage").expanduser().resolve() / "studio.sqlite3"
@@ -139,33 +139,42 @@ def ensure_captions(python: Path) -> None:
     installed = subprocess.run(package_check, cwd=ROOT, capture_output=True, timeout=60, check=False).returncode == 0
     if not installed or not stamp_matches(stamp, expected):
         message("Installing local automatic-caption dependencies ...")
-        execute([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--no-input", "-r", str(requirement)])
+        execute([str(python), "-m", "pip", "install", "--disable-pip-version-check", "--no-input", "-r", str(requirement)], timeout=timeout)
         execute(package_check, capture=True, timeout=60)
         write_stamp(stamp, expected)
     cached = subprocess.run([str(python), "-c", "from backend.processing.transcription import model_is_cached; raise SystemExit(0 if model_is_cached() else 1)"],
                             cwd=ROOT, capture_output=True, timeout=30, check=False).returncode == 0
     if not cached:
         message("Downloading tiny.en for default offline captions (small model, no video uploads) ...")
-        execute([str(python), str(ROOT / "scripts/download_model.py"), "--download"], timeout=1200)
+        execute([str(python), str(ROOT / "scripts/download_model.py"), "--download"], timeout=timeout)
     message("Automatic local captions are ready; choose No captions in Settings to opt out.")
 
 
 def find_node() -> tuple[str, str, Path]:
-    node = shutil.which("node")
-    if not node:
-        raise RuntimeError("Node.js 20+ is required. Install Node.js LTS from https://nodejs.org, reopen this terminal, and run again.")
-    version = execute([node, "--version"], capture=True, timeout=15).stdout.strip()
-    if int(version.lstrip("v").split(".")[0]) < 20:
-        raise RuntimeError(f"Node.js 20+ is required; found {version}. Install a current LTS release.")
     npm = shutil.which("npm")
-    candidates = [Path(node).parent / "node_modules/npm/bin/npm-cli.js"]
-    if npm:
-        resolved = Path(npm).resolve()
-        candidates.extend([resolved, resolved.parent / "npm-cli.js", resolved.parent / "node_modules/npm/bin/npm-cli.js"])
-    npm_cli = next((p for p in candidates if p.name == "npm-cli.js" and p.is_file()), None)
-    if not npm_cli:
-        raise RuntimeError("npm was not found alongside Node.js. Repair/reinstall Node.js with npm included.")
-    return node, version, npm_cli
+    candidates = [shutil.which("node")]
+    if os.name == "nt":
+        candidates.extend(str(Path(base) / "nodejs" / "node.exe") for base in (
+            os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)"),
+            str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs") if os.environ.get("LOCALAPPDATA") else None,
+        ) if base)
+    for node in dict.fromkeys(candidate for candidate in candidates if candidate):
+        if not Path(node).is_file():
+            continue
+        npm_candidates = [Path(node).parent / "node_modules/npm/bin/npm-cli.js"]
+        if npm:
+            resolved = Path(npm).resolve()
+            npm_candidates.extend([resolved, resolved.parent / "npm-cli.js", resolved.parent / "node_modules/npm/bin/npm-cli.js"])
+        npm_cli = next((path for path in npm_candidates if path.name == "npm-cli.js" and path.is_file()), None)
+        if not npm_cli:
+            continue
+        try:
+            version = execute([node, "--version"], capture=True, timeout=15).stdout.strip()
+            if int(version.lstrip("v").split(".")[0]) >= 20:
+                return node, version, npm_cli
+        except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
+            continue
+    raise RuntimeError("Node.js 20+ with npm was not found. Install Node.js LTS from https://nodejs.org, reopen this terminal, and run again.")
 
 
 def ensure_javascript(node: str, version: str, npm_cli: Path) -> None:
@@ -407,7 +416,13 @@ def main(argv=None) -> int:
             ensure_javascript(node, version, npm_cli)
             media = ensure_media()
             if not args.skip_caption_setup:
-                ensure_captions(python)
+                try:
+                    ensure_captions(python, timeout=1200 if args.install_only else 90)
+                except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+                    if args.install_only:
+                        raise
+                    message(f"Local caption setup is incomplete: {exc}")
+                    message("Starting without offline caption generation. Manual captions and configured Groq captions remain available. Run run.dev.cmd --install-only to retry the full setup.")
         if args.install_only:
             message("All dependencies are ready. Run run.dev.cmd to start GTA Clip Studio.")
             return 0

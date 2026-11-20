@@ -10,7 +10,7 @@ import {
   Upload,
   X,
   Youtube,
-} from 'lucide-react';
+} from '../icons';
 import { api, uploadVideo } from '../services/api';
 import { useUI } from '../stores/ui';
 import { useStudio } from '../stores/studio';

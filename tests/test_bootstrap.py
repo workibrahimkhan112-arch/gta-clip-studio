@@ -196,6 +196,43 @@ def test_install_only_never_starts_server_or_browser(setup, monkeypatch):
     launch.assert_not_called()
 
 
+def test_optional_caption_setup_timeout_still_starts_app(setup, monkeypatch, capsys):
+    monkeypatch.setattr(bootstrap, "find_node", lambda: ("node", "v22.0.0", setup.tools / "npm-cli.js"))
+    monkeypatch.setattr(bootstrap, "ensure_python", lambda: setup.root / "python.exe")
+    monkeypatch.setattr(bootstrap, "ensure_javascript", lambda *_args: None)
+    monkeypatch.setattr(bootstrap, "ensure_media", lambda: {"FFMPEG_PATH": "ffmpeg", "FFPROBE_PATH": "ffprobe"})
+    captions = Mock(side_effect=subprocess.TimeoutExpired("pip install", 90))
+    launch = Mock(return_value=0)
+    monkeypatch.setattr(bootstrap, "ensure_captions", captions)
+    monkeypatch.setattr(bootstrap, "launch", launch)
+
+    assert bootstrap.main(["--no-open"]) == 0
+    captions.assert_called_once_with(setup.root / "python.exe", timeout=90)
+    launch.assert_called_once()
+    assert "run.dev.cmd --install-only" in capsys.readouterr().out
+
+    assert bootstrap.main(["--install-only"]) == 1
+    assert captions.call_args.kwargs["timeout"] == 1200
+    launch.assert_called_once()
+
+
+def test_find_node_skips_path_entry_without_npm(setup, monkeypatch):
+    bare = setup.root / "bare" / "node.exe"
+    bare.parent.mkdir()
+    bare.write_bytes(b"node")
+    full = setup.root / "program-files" / "nodejs" / "node.exe"
+    full.parent.mkdir(parents=True)
+    full.write_bytes(b"node")
+    npm = full.parent / "node_modules/npm/bin/npm-cli.js"
+    npm.parent.mkdir(parents=True)
+    npm.write_text("", encoding="utf-8")
+    monkeypatch.setenv("ProgramFiles", str(setup.root / "program-files"))
+    monkeypatch.setattr(bootstrap.shutil, "which", lambda name: str(bare) if name == "node" else None)
+    monkeypatch.setattr(bootstrap, "execute", lambda command, **_kwargs: subprocess.CompletedProcess(command, 0, stdout="v22.0.0"))
+
+    assert bootstrap.find_node() == (str(full), "v22.0.0", npm)
+
+
 @pytest.mark.parametrize("open_browser", [False, True])
 def test_browser_opens_only_after_ui_readiness(setup, monkeypatch, open_browser):
     order = []

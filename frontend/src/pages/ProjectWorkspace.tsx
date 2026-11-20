@@ -12,7 +12,7 @@ import {
   Sparkles,
   Trash2,
   X,
-} from 'lucide-react';
+} from '../icons';
 import { api } from '../services/api';
 import { useStudio } from '../stores/studio';
 import { useAction } from '../hooks/useAction';
@@ -54,7 +54,11 @@ import type { Highlight, EventSnapshot } from '../types/api';
 export function ProjectWorkspace() {
   const { projectId = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') === 'layout' ? 'layout' : 'review';
+  const requested = searchParams.get('tab');
+  const tab =
+    requested === 'layout' || requested === 'highlights' || requested === 'activity'
+      ? requested
+      : 'review';
   const requestedTab = useRef(tab);
   useEffect(() => {
     requestedTab.current = tab;
@@ -99,6 +103,10 @@ export function ProjectWorkspace() {
     if (tab === 'layout') setLayoutVisited(true);
     else layoutRef.current?.querySelectorAll('video').forEach((video) => video.pause());
   }, [tab]);
+  useEffect(() => {
+    if (tab === 'review' && focusedId)
+      previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [tab, focusedId]);
   useEffect(() => {
     const abort = new AbortController();
     let disposed = false;
@@ -168,7 +176,12 @@ export function ProjectWorkspace() {
   const preview = (highlight: Highlight) => {
     setFocusedId(highlight.id);
     seekTo(highlight.start);
-    previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    requestedTab.current = 'review';
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('tab');
+      return next;
+    });
   };
   if (!project)
     return (
@@ -263,10 +276,12 @@ export function ProjectWorkspace() {
           // Focus and click can both arrive before a router transition commits.
           // Only push one history entry for that tab change.
           if (requestedTab.current === value) return;
-          requestedTab.current = value === 'layout' ? 'layout' : 'review';
+          requestedTab.current =
+            value === 'layout' || value === 'highlights' || value === 'activity' ? value : 'review';
           setSearchParams((current) => {
             const next = new URLSearchParams(current);
-            if (value === 'layout') next.set('tab', 'layout');
+            if (value === 'layout' || value === 'highlights' || value === 'activity')
+              next.set('tab', value);
             else next.delete('tab');
             return next;
           });
@@ -274,7 +289,9 @@ export function ProjectWorkspace() {
       >
         <TabsList aria-label="Project view">
           <TabsTrigger value="review">Review</TabsTrigger>
+          <TabsTrigger value="highlights">Highlights</TabsTrigger>
           <TabsTrigger value="layout">Layout</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
         <TabsContent value="review">
           <Card className="overflow-hidden" ref={previewRef}>
@@ -342,7 +359,9 @@ export function ProjectWorkspace() {
               </div>
             </div>
           )}
-          <section className="mt-8">
+        </TabsContent>
+        <TabsContent value="highlights">
+          <section>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <Sparkles className="size-4 text-primary" />
@@ -364,8 +383,10 @@ export function ProjectWorkspace() {
                 <>
                   <details className="mb-5 rounded-lg border border-border bg-card">
                     <summary className="cursor-pointer px-4 py-3 text-xs font-medium">
-                      Tools{' '}
-                      <span className="ml-2 font-normal text-zinc-500">Subtitles & AI review</span>
+                      Subtitles & AI review{' '}
+                      <span className="ml-2 font-normal text-zinc-500">
+                        for selected highlights
+                      </span>
                     </summary>
                     <ProjectEnhancements projectId={project.id} highlights={highlights} />
                   </details>
@@ -377,6 +398,10 @@ export function ProjectWorkspace() {
                         highlight={highlight}
                         onEdit={(h) => setEditorId(h.id)}
                         onPreview={preview}
+                        onDeleted={(identifier) => {
+                          if (focusedId === identifier) setFocusedId(null);
+                          if (editorId === identifier) setEditorId(null);
+                        }}
                       />
                     ))}
                   </div>
@@ -442,32 +467,37 @@ export function ProjectWorkspace() {
             )}
           </TabsContent>
         )}
-      </Tabs>
-      <details className="mt-6 rounded-lg border border-border bg-card">
-        <summary className="cursor-pointer px-4 py-3 text-xs font-medium">Project details</summary>
-        <div className="space-y-4 border-t border-border p-4">
-          <ProjectDetails project={project} />
-          {settings && (
-            <p className="text-[11px] leading-relaxed text-zinc-500">
-              Analysis settings: up to {settings.max_clips} clips · {settings.clip_duration}s target
-              · {settings.sampling_interval}s sampling · {settings.cpu_workers} FFmpeg thread
-              {settings.cpu_workers > 1 ? 's' : ''}
-            </p>
+        <TabsContent value="activity">
+          <details className="rounded-lg border border-border bg-card">
+            <summary className="cursor-pointer px-4 py-3 text-xs font-medium">
+              Project details
+            </summary>
+            <div className="space-y-4 border-t border-border p-4">
+              <ProjectDetails project={project} />
+              {settings && (
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  Analysis settings: up to {settings.max_clips} clips · {settings.clip_duration}s
+                  target · {settings.sampling_interval}s sampling · {settings.cpu_workers} FFmpeg
+                  thread
+                  {settings.cpu_workers > 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </details>
+          {previousJobs.length > 0 && (
+            <details className="mt-4 rounded-lg border border-border bg-card">
+              <summary className="cursor-pointer px-4 py-3 text-xs font-medium">
+                Previous jobs <Badge>{previousJobs.length}</Badge>
+              </summary>
+              <div className="grid gap-3 border-t border-border p-4 lg:grid-cols-2">
+                {previousJobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+            </details>
           )}
-        </div>
-      </details>
-      {previousJobs.length > 0 && (
-        <details className="mt-4 rounded-lg border border-border bg-card">
-          <summary className="cursor-pointer px-4 py-3 text-xs font-medium">
-            Previous jobs <Badge>{previousJobs.length}</Badge>
-          </summary>
-          <div className="grid gap-3 border-t border-border p-4 lg:grid-cols-2">
-            {previousJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-        </details>
-      )}
+        </TabsContent>
+      </Tabs>
       <HighlightEditor
         highlight={allHighlights.find((h) => h.id === editorId) ?? null}
         onClose={() => setEditorId(null)}

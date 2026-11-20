@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Download, ListChecks } from 'lucide-react';
+import { AlertTriangle, Download, ListChecks } from '../icons';
 import type { CaptionStyle, Highlight } from '../types/api';
 import { api } from '../services/api';
 import { useAction } from '../hooks/useAction';

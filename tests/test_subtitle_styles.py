@@ -92,7 +92,7 @@ class SubtitleStyleValidationTests(unittest.TestCase):
             result = normalize_subtitle_style({"x": x, "width": 0.4})
             assert result is not None
             self.assertEqual(result["x"], x)
-        for font in ("Arial", "Impact", "Verdana"):
+        for font in ("Arial", "Impact", "Verdana", "Inter", "Montserrat"):
             result = normalize_subtitle_style({
                 "font_family": font, "font_size": 96, "outline_width": 8,
                 "background_opacity": 0.85, "width": 1, "x": 0.5, "y": 0.95,

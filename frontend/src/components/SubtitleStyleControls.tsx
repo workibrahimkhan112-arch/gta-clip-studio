@@ -74,7 +74,7 @@ export function SubtitleStyleControls({
           value={style.font_family}
           disabled={disabled}
           onValueChange={(value) => update('font_family', value as SubtitleStyle['font_family'])}
-          options={['Arial', 'Impact', 'Verdana'].map((font) => ({ value: font, label: font }))}
+          options={['Arial', 'Impact', 'Verdana', 'Inter', 'Montserrat'].map((font) => ({ value: font, label: font }))}
         />
       </div>
       {slider('font_size', 'Font size', 18, 96, 1, ' px')}

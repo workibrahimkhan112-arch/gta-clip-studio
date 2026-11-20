@@ -82,10 +82,10 @@ export const api = {
     request<Project>(`/projects/${id(projectId)}/layout`, json('PATCH', layout)),
   generateCaptions: (highlightId: string, force = false) =>
     request<Job>(`/highlights/${id(highlightId)}/captions`, json('POST', { force })),
-  projectCaptions: (projectId: string, force = false) =>
-    request<Job>(`/projects/${id(projectId)}/captions`, json('POST', { force })),
-  scoreProject: (projectId: string, force = false) =>
-    request<Job>(`/projects/${id(projectId)}/score`, json('POST', { force })),
+  projectCaptions: (projectId: string, force = false, highlight_ids?: string[]) =>
+    request<Job>(`/projects/${id(projectId)}/captions`, json('POST', { force, highlight_ids })),
+  scoreProject: (projectId: string, force = false, highlight_ids?: string[]) =>
+    request<Job>(`/projects/${id(projectId)}/score`, json('POST', { force, highlight_ids })),
   suggestTitles: (highlightId: string, force = false) =>
     request<Job>(`/highlights/${id(highlightId)}/titles`, json('POST', { force })),
   chatgptStatus: () => request<ChatGPTStatus>('/chatgpt'),
@@ -120,11 +120,14 @@ export const api = {
       subtitle_style?: SubtitleStyle | null;
     },
   ) => request<Highlight>(`/highlights/${id(highlightId)}`, json('PATCH', patch)),
+  deleteHighlight: (highlightId: string) =>
+    request<void>(`/highlights/${id(highlightId)}`, json('DELETE')),
   exportHighlight: (highlightId: string, caption_style: CaptionStyle) =>
     request<Job>(`/highlights/${id(highlightId)}/export`, json('POST', { caption_style })),
   batchExport: (highlight_ids: string[], caption_style: CaptionStyle) =>
     request<Job[]>('/exports/batch', json('POST', { highlight_ids, caption_style })),
   exports: () => request<ExportRecord[]>('/exports'),
+  deleteExport: (exportId: string) => request<void>(`/exports/${id(exportId)}`, json('DELETE')),
   jobs: () => request<Job[]>('/jobs'),
   cancelJob: (jobId: string) => request<Job>(`/jobs/${id(jobId)}/cancel`, json('POST')),
   health: () => request<Health>('/health'),

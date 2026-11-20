@@ -26,7 +26,7 @@ MAX_REFINEMENT_SECONDS = 120.0
 MAX_CLIP_SECONDS = 90.0
 _MODEL_HELP = (
     "Enter a transcript in the clip's captions editor or export with captions off. "
-    "Run run.dev.cmd to automatically install the local caption model, or configure Groq captions "
+    "Run run.dev.cmd --install-only to install the local caption model, or configure Groq captions "
     "with an API key and cloud consent in Settings."
 )
 

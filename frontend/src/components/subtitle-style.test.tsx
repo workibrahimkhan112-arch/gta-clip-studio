@@ -86,6 +86,16 @@ function unloadPrevented() {
 }
 
 describe('persisted visual subtitle editor', () => {
+  it('offers bundled Inter and Montserrat for subtitle preview', () => {
+    render(<Editor />);
+    stylePanel();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Font' }));
+    expect(screen.getByRole('option', { name: 'Inter' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('option', { name: 'Montserrat' }));
+    expect(screen.getByRole('group', { name: 'Move subtitle box' }).style.fontFamily).toContain(
+      'Montserrat',
+    );
+  });
   it('opens saved style on the one actual preview and PATCHes only changed style before export', async () => {
     const view = render(<Editor />);
     stylePanel();
